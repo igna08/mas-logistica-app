@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar Nuevo Recorrido - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-lg" x-data="{ vehiculo_id: '', km_inicial: '', zona: '', estado_inicial: '', observaciones_inicio: '' }">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">Iniciar Nuevo Recorrido</h1>
+
+    <form action="/api/recorridos/inicio" method="POST" @submit.prevent="submitForm" class="bg-white p-6 rounded-lg shadow-md">
+
+        <!-- Selector de Vehículo -->
+        <div class="mb-4">
+            <label for="vehiculo" class="block text-gray-700 font-semibold mb-2">Vehículo (Patente)</label>
+            <select id="vehiculo" name="vehiculo_id" x-model="vehiculo_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Seleccione un vehículo --</option>
+                <!-- Opciones de vehículos se cargarían dinámicamente -->
+                <option value="AA123BB">AA-123-BB</option>
+                <option value="AC456DD">AC-456-DD</option>
+            </select>
+        </div>
+
+        <!-- KM Inicial -->
+        <div class="mb-4">
+            <label for="km_inicial" class="block text-gray-700 font-semibold mb-2">Kilometraje Inicial</label>
+            <input type="number" id="km_inicial" name="km_inicial" x-model="km_inicial" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: 150200">
+        </div>
+
+        <!-- Zona -->
+        <div class="mb-4">
+            <label for="zona" class="block text-gray-700 font-semibold mb-2">Zona / Recorrido</label>
+            <input type="text" id="zona" name="zona" x-model="zona" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej: Zona Norte">
+        </div>
+
+        <!-- Estado Inicial -->
+        <div class="mb-4">
+            <label for="estado_inicial" class="block text-gray-700 font-semibold mb-2">Estado General del Vehículo</label>
+            <textarea id="estado_inicial" name="estado_inicial" x-model="estado_inicial" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Describa el estado de chapa, pintura, cubiertas, etc."></textarea>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="mb-4">
+            <label for="observaciones_inicio" class="block text-gray-700 font-semibold mb-2">Observaciones de Inicio</label>
+            <textarea id="observaciones_inicio" name="observaciones_inicio" x-model="observaciones_inicio" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Cualquier otra observación relevante"></textarea>
+        </div>
+
+        <!-- Botón de Envío -->
+        <div class="mt-6">
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Iniciar Recorrido
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function submitForm() {
+        // Aquí iría la lógica de envío del formulario con fetch a la API
+        // Por ahora, solo es un placeholder
+        const formData = {
+            vehiculo_id: this.vehiculo_id,
+            km_inicial: this.km_inicial,
+            zona: this.zona,
+            estado_inicial: this.estado_inicial,
+            observaciones_inicio: this.observaciones_inicio
+        };
+        console.log("Enviando formulario:", formData);
+        alert("Función de envío con fetch a la API no implementada. Revisa la consola.");
+    }
+</script>
+{% endblock %}

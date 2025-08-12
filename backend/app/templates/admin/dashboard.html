@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+
+    <!-- Métricas Principales -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Card 1: Vehículos Activos -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-sm font-medium text-gray-500">Vehículos Activos</h2>
+            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+        </div>
+        <!-- Card 2: Choferes Activos -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-sm font-medium text-gray-500">Choferes Activos</h2>
+            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+        </div>
+        <!-- Card 3: Recorridos este mes -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-sm font-medium text-gray-500">Recorridos (Mes Actual)</h2>
+            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+        </div>
+        <!-- Card 4: KM Recorridos este mes -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-sm font-medium text-gray-500">KM Recorridos (Mes Actual)</h2>
+            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Kilómetros por Mes</h2>
+            <div class="h-64">
+                <canvas id="kmChart"></canvas>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Consumo de Combustible por Vehículo</h2>
+            <div class="h-64">
+                <canvas id="combustibleChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Incluir Chart.js desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Placeholder para el gráfico de KM
+        const kmCtx = document.getElementById('kmChart').getContext('2d');
+        const kmChart = new Chart(kmCtx, {
+            type: 'line',
+            data: {
+                labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                datasets: [{
+                    label: 'KM Recorridos',
+                    data: [12000, 19000, 15000, 17000, 22000, 25000],
+                    borderColor: 'rgb(59, 130, 246)',
+                    tension: 0.1
+                }]
+            }
+        });
+
+        // Placeholder para el gráfico de combustible
+        const combustibleCtx = document.getElementById('combustibleChart').getContext('2d');
+        const combustibleChart = new Chart(combustibleCtx, {
+            type: 'bar',
+            data: {
+                labels: ['AA123BB', 'AC456DD', 'AE789FF'],
+                datasets: [{
+                    label: 'Costo de Combustible ($)',
+                    data: [55000, 72000, 61000],
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                    ],
+                    borderColor: [
+                        'rgb(255, 99, 132)',
+                        'rgb(54, 162, 235)',
+                        'rgb(255, 206, 86)',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}
