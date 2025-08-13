@@ -51,4 +51,8 @@ def create_app(config_name='default'):
     def make_shell_context():
         return dict(app=app, db=db)
 
+    # Register CLI commands
+    from . import commands
+    app.cli.add_command(commands.seed)
+
     return app

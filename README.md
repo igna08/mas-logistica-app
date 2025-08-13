@@ -60,6 +60,30 @@ source venv/bin/activate  # En Windows: venv\\Scripts\\activate
 pip install -r backend/requirements.txt
 ```
 
+### 5. Inicializar la Base de Datos
+
+Después de configurar el entorno, necesitas crear las tablas en la base de datos y añadir un usuario administrador inicial para poder acceder a la aplicación.
+
+**Si usas Docker:**
+Asegúrate de que los contenedores estén corriendo (`docker compose up -d`). Luego, ejecuta los siguientes comandos en una nueva terminal para acceder al contenedor del servicio web y ejecutar los comandos de inicialización.
+
+```bash
+docker compose exec web bash
+flask db upgrade
+flask seed
+exit
+```
+
+**Si usas Python Directo:**
+Asegúrate de tener tu base de datos PostgreSQL corriendo y accesible. Luego, ejecuta:
+```bash
+# Desde la raíz del proyecto
+FLASK_APP=backend/wsgi.py flask db upgrade
+FLASK_APP=backend/wsgi.py flask seed
+```
+
+Esto creará todas las tablas y un usuario administrador con las credenciales que se mostrarán en la consola.
+
 ## Ejecución de la Aplicación
 
 Puedes ejecutar la aplicación de dos maneras:
