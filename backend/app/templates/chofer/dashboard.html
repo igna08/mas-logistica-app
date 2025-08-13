@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Mi Panel - Chofer{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">Panel de Chofer</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Estado Actual</h2>
+
+        {% if open_recorrido %}
+            <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4" role="alert">
+                <p class="font-bold">¡Tienes un recorrido abierto!</p>
+                <p>
+                    Iniciado el {{ open_recorrido.fecha_inicio.strftime('%d/%m/%Y a las %H:%M') }} con el vehículo {{ open_recorrido.vehiculo.patente }}.
+                </p>
+            </div>
+            <div class="mt-6">
+                <a href="{{ url_for('main.fin_recorrido_form', recorrido_id=open_recorrido.id) }}" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-md hover:bg-blue-700">
+                    Continuar y Finalizar Recorrido
+                </a>
+            </div>
+        {% else %}
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4" role="alert">
+                <p class="font-bold">No tienes recorridos abiertos.</p>
+                <p>Puedes iniciar uno nuevo cuando estés listo.</p>
+            </div>
+            <div class="mt-6">
+                <a href="{{ url_for('main.nuevo_recorrido') }}" class="bg-green-600 text-white font-bold py-3 px-6 rounded-md hover:bg-green-700">
+                    Iniciar Nuevo Recorrido
+                </a>
+            </div>
+        {% endif %}
+
+        <hr class="my-8">
+
+        <h3 class="text-lg font-semibold text-gray-700 mb-4">Mis Recorridos Recientes</h3>
+        {# Here you would loop through the user's past recorridos #}
+        <p class="text-gray-500">Próximamente: Historial de tus recorridos.</p>
+
+    </div>
+</div>
+{% endblock %}

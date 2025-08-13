@@ -37,6 +37,9 @@ def create_app(config_name='default'):
     from .api.uploads import bp as uploads_bp
     app.register_blueprint(uploads_bp)
 
+    from .main import bp as main_bp
+    app.register_blueprint(main_bp)
+
     # Shell context for flask cli
     @app.shell_context_processor
     def make_shell_context():

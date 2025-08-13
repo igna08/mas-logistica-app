@@ -10,7 +10,7 @@ class Config:
     # JWT Configuration
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'another-super-secret'
     JWT_TOKEN_LOCATION = ['cookies']
-    JWT_ACCESS_COOKIE_PATH = '/api/'
+    JWT_ACCESS_COOKIE_PATH = '/'
     JWT_REFRESH_COOKIE_PATH = '/api/auth/refresh'
     JWT_COOKIE_CSRF_PROTECT = True # Change to True in production
     JWT_COOKIE_SECURE = False # Change to True in production with HTTPS
