@@ -33,3 +33,6 @@ flake8
 
 # Testing
 pytest>=6.2
+
+# AI / ML
+openai>=1.0

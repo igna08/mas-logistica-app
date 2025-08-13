@@ -27,6 +27,9 @@ class Config:
     S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
     S3_REGION = os.environ.get('S3_REGION')
 
+    # OpenAI Configuration
+    OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+
 class DevelopmentConfig(Config):
     DEBUG = True
 
