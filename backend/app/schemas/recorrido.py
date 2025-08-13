@@ -60,7 +60,7 @@ class Recorrido(BaseModel):
     combustible_foto: Optional[str] = None
     observaciones_inicio: Optional[str] = None
     observaciones_fin: Optional[str] = None
-    estado: str
+    status: str
 
     # Nested data for detail view
     controles: List[Control] = []

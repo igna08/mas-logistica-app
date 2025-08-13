@@ -11,6 +11,7 @@ class Usuario(db.Model):
     email = db.Column(db.Text, unique=True, nullable=False)
     password_hash = db.Column(db.Text, nullable=False)
     rol = db.Column(db.Text, nullable=False, default='chofer')
+    profile_picture_url = db.Column(db.Text, nullable=True)
     activo = db.Column(db.Boolean, default=True)
     creado_en = db.Column(db.TIMESTAMP(timezone=True), server_default=db.func.now())
 

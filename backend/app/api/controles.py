@@ -7,6 +7,7 @@ from app.schemas.control import ControlCreate, Control as ControlSchema
 from app.extensions import db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.utils.rbac import requires_roles
+from app.tasks import analizar_control
 
 bp = Blueprint('controles', __name__, url_prefix='/api')
 
@@ -30,7 +31,7 @@ def create_control():
     recorrido = RecorridoModel.query.filter_by(
         id=data.recorrido_id,
         chofer_id=chofer_id,
-        estado='abierto'
+        status='abierto'
     ).first()
 
     if not recorrido:
@@ -40,6 +41,9 @@ def create_control():
     db.session.add(nuevo_control)
     db.session.commit()
     db.session.refresh(nuevo_control)
+
+    # Trigger the analysis task asynchronously
+    analizar_control.delay(str(nuevo_control.id))
 
     return jsonify(ControlSchema.model_validate(nuevo_control).model_dump()), 201
 

@@ -38,7 +38,7 @@ def test_iniciar_recorrido_success(test_client, session):
 
     assert resp.status_code == 201
     data = resp.json
-    assert data['estado'] == 'abierto'
+    assert data['status'] == 'abierto'
     assert data['vehiculo_id'] == str(vehiculo.id)
     assert data['chofer_id'] == str(chofer.id)
 
@@ -46,7 +46,7 @@ def test_iniciar_recorrido_success(test_client, session):
     recorrido_id_obj = uuid.UUID(data['id'])
     recorrido_db = session.get(Recorrido, recorrido_id_obj)
     assert recorrido_db is not None
-    assert recorrido_db.estado == 'abierto'
+    assert recorrido_db.status == 'abierto'
 
 def test_iniciar_recorrido_fail_if_open(test_client, session):
     """
@@ -90,13 +90,13 @@ def test_fin_recorrido_success(test_client, session):
     fin_resp = test_client.post(f'/api/recorridos/{recorrido_id}/fin', json=fin_data)
 
     assert fin_resp.status_code == 200
-    assert fin_resp.json['estado'] == 'cerrado'
+    assert fin_resp.json['status'] == 'cerrado'
     assert Decimal(fin_resp.json['km_final']) == Decimal('10200')
 
     # Verify in DB
     recorrido_id_obj = uuid.UUID(recorrido_id)
     recorrido_db = session.get(Recorrido, recorrido_id_obj)
-    assert recorrido_db.estado == 'cerrado'
+    assert recorrido_db.status == 'cerrado'
 
 def test_fin_recorrido_fail_bad_km(test_client, session):
     """
@@ -117,3 +117,31 @@ def test_fin_recorrido_fail_bad_km(test_client, session):
 
     assert fin_resp.status_code == 400
     assert "debe ser mayor al inicial" in fin_resp.json['msg']
+
+def test_approve_recorrido(test_client, session):
+    """
+    GIVEN a 'cerrado' recorrido and a logged-in maintenance user
+    WHEN the '/approve' endpoint is called
+    THEN the recorrido status should be 'aprobado'.
+    """
+    chofer, vehiculo = setup_test_data(session)
+    mantenimiento = Usuario(nombre="Test Maint", email="maint@test.com", rol="mantenimiento")
+    mantenimiento.set_password("password")
+    session.add(mantenimiento)
+    session.commit()
+
+    # Create and close a recorrido
+    login_user(test_client, "chofer@test.com", "password")
+    inicio_resp = test_client.post('/api/recorridos/inicio', json={"vehiculo_id": str(vehiculo.id), "km_inicial": 100})
+    recorrido_id = inicio_resp.json['id']
+    test_client.post(f'/api/recorridos/{recorrido_id}/fin', json={"km_final": 200})
+    test_client.post('/api/auth/logout')
+
+    # Login as maintenance and approve
+    login_user(test_client, "maint@test.com", "password")
+    approve_resp = test_client.post(f'/api/recorridos/{recorrido_id}/approve')
+
+    assert approve_resp.status_code == 200
+
+    recorrido_db = session.get(Recorrido, uuid.UUID(recorrido_id))
+    assert recorrido_db.status == 'aprobado'

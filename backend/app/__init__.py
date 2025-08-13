@@ -37,6 +37,12 @@ def create_app(config_name='default'):
     from .api.uploads import bp as uploads_bp
     app.register_blueprint(uploads_bp)
 
+    from .api.users import bp as users_bp
+    app.register_blueprint(users_bp)
+
+    from .api.admin.users import bp as admin_users_bp
+    app.register_blueprint(admin_users_bp)
+
     from .main import bp as main_bp
     app.register_blueprint(main_bp)
 

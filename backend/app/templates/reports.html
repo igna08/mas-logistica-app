@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Recorridos - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Reporte de Recorridos</h1>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white p-4 rounded-lg shadow-md mb-6">
+        <h2 class="text-lg font-semibold mb-2">Filtros</h2>
+        <form class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label for="fecha_desde" class="block text-sm font-medium text-gray-700">Fecha Desde</label>
+                <input type="date" name="fecha_desde" id="fecha_desde" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="fecha_hasta" class="block text-sm font-medium text-gray-700">Fecha Hasta</label>
+                <input type="date" name="fecha_hasta" id="fecha_hasta" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div>
+                <label for="chofer" class="block text-sm font-medium text-gray-700">Chofer</label>
+                <select id="chofer" name="chofer" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Todos</option>
+                    {% for chofer in choferes %}
+                    <option value="{{ chofer.id }}">{{ chofer.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="vehiculo" class="block text-sm font-medium text-gray-700">Vehículo</label>
+                <select id="vehiculo" name="vehiculo" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Todos</option>
+                    {% for vehiculo in vehiculos %}
+                    <option value="{{ vehiculo.id }}">{{ vehiculo.patente }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="self-end">
+                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de Recorridos -->
+    <div class="bg-white rounded-lg shadow overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Inicio</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer / Vehículo</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KM Recorridos</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for recorrido in recorridos %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ recorrido.fecha_inicio.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div class="font-medium">{{ recorrido.chofer.nombre }}</div>
+                        <div class="text-gray-500">{{ recorrido.vehiculo.patente }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if recorrido.km_final and recorrido.km_inicial %}
+                            {{ '%.2f'|format(recorrido.km_final - recorrido.km_inicial) }} km
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            {% if recorrido.status == 'abierto' %} bg-blue-100 text-blue-800
+                            {% elif recorrido.status == 'cerrado' %} bg-yellow-100 text-yellow-800
+                            {% elif recorrido.status == 'aprobado' %} bg-green-100 text-green-800
+                            {% elif recorrido.status == 'revision_requerida' %} bg-red-100 text-red-800
+                            {% endif %}">
+                            {{ recorrido.status|replace('_', ' ')|capitalize }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <a href="#" class="text-indigo-600 hover:text-indigo-900">Ver Detalle</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">No se encontraron recorridos.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

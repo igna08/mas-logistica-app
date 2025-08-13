@@ -25,7 +25,8 @@ class Recorrido(db.Model):
     observaciones_inicio = db.Column(db.Text)
     observaciones_fin = db.Column(db.Text)
 
-    estado = db.Column(db.Text, nullable=False, default='abierto') # 'abierto' or 'cerrado'
+    # Status values: abierto, cerrado, en_revision, aprobado
+    status = db.Column(db.Text, nullable=False, default='abierto')
 
     # Relationships
     chofer = db.relationship('Usuario', backref=db.backref('recorridos', lazy=True))

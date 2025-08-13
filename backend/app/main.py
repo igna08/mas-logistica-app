@@ -76,7 +76,7 @@ def admin_dashboard():
 @bp.route('/mantenimiento/panel')
 @login_required_for_templates
 def mantenimiento_panel():
-    recorridos_pendientes = Recorrido.query.filter_by(estado='cerrado').order_by(Recorrido.fecha_fin.desc()).all()
+    recorridos_pendientes = Recorrido.query.filter_by(status='cerrado').order_by(Recorrido.fecha_fin.desc()).all()
     # A real implementation would have another state like 'en_revision'
     return render_template('mantenimiento/panel.html', recorridos=recorridos_pendientes)
 
@@ -85,7 +85,7 @@ def mantenimiento_panel():
 def chofer_dashboard():
     user = get_current_user_role()
     # Find if the chofer has an open recorrido
-    open_recorrido = Recorrido.query.filter_by(chofer_id=user.id, estado='abierto').first()
+    open_recorrido = Recorrido.query.filter_by(chofer_id=user.id, status='abierto').first()
     return render_template('chofer/dashboard.html', open_recorrido=open_recorrido)
 
 @bp.route('/recorrido/nuevo')
@@ -93,7 +93,7 @@ def chofer_dashboard():
 def nuevo_recorrido():
     # A driver can't start a new trip if they already have one open
     user = get_current_user_role()
-    open_recorrido = Recorrido.query.filter_by(chofer_id=user.id, estado='abierto').first()
+    open_recorrido = Recorrido.query.filter_by(chofer_id=user.id, status='abierto').first()
     if open_recorrido:
         # Maybe redirect to the active trip page? For now, redirect to dashboard.
         return redirect(url_for('main.chofer_dashboard'))
@@ -107,7 +107,39 @@ def fin_recorrido_form(recorrido_id):
     recorrido = db.session.get(Recorrido, recorrido_id)
     # Add validation to ensure the user is the correct chofer
     user = get_current_user_role()
-    if not recorrido or recorrido.chofer_id != user.id or recorrido.estado != 'abierto':
+    if not recorrido or recorrido.chofer_id != user.id or recorrido.status != 'abierto':
         return redirect(url_for('main.chofer_dashboard'))
 
     return render_template('chofer/fin_recorrido.html', recorrido=recorrido)
+
+@bp.route('/profile')
+@login_required_for_templates
+def profile():
+    """Renders the user's profile page."""
+    return render_template('profile.html')
+
+@bp.route('/admin/users')
+@login_required_for_templates
+def user_management():
+    """Renders the admin user management page."""
+    # A real implementation should check for admin role here too
+    users = Usuario.query.order_by(Usuario.nombre).all()
+    return render_template('admin/user_management.html', users=users)
+
+@bp.route('/reports')
+@login_required_for_templates
+def reports():
+    """Renders a unified reports page with filters."""
+    user = get_current_user_role()
+    if user.rol not in ['admin', 'mantenimiento']:
+        return redirect(url_for('main.index')) # Or show an unauthorized page
+
+    # This is a basic query. A real implementation would use request.args for filtering.
+    recorridos = Recorrido.query.order_by(Recorrido.fecha_inicio.desc()).all()
+    choferes = Usuario.query.filter_by(rol='chofer').all()
+    vehiculos = Vehiculo.query.all()
+
+    return render_template('reports.html',
+                           recorridos=recorridos,
+                           choferes=choferes,
+                           vehiculos=vehiculos)
