@@ -62,12 +62,14 @@
 </div>
 
 <script>
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.classList.contains('action-btn')) {
-        const action = e.target.dataset.action;
-        const recorridoId = e.target.dataset.id;
-        handleRecorridoAction(recorridoId, action, e.target);
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('recorridos-table-body').addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('action-btn')) {
+            const action = e.target.dataset.action;
+            const recorridoId = e.target.dataset.id;
+            handleRecorridoAction(recorridoId, action, e.target);
+        }
+    });
 });
 
 async function handleRecorridoAction(recorridoId, action, button) {
@@ -78,7 +80,10 @@ async function handleRecorridoAction(recorridoId, action, button) {
     try {
         const response = await fetch(url, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'}
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken
+            }
         });
         const data = await response.json();
 
@@ -125,7 +130,9 @@ function showAlert(message, color) {
     container.appendChild(alert);
 
     setTimeout(() => {
-        alert.remove();
+        if(alert.parentNode) {
+            alert.remove();
+        }
     }, 5000);
 }
 </script>

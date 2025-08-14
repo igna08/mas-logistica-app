@@ -54,11 +54,11 @@ def deactivate_user(user_id):
     """Deactivate a user (soft delete). Admin only."""
     user = db.session.get(Usuario, user_id)
     if not user:
-        return jsonify({"msg": "User not found"}), 404
+        return jsonify({"msg": "Usuario no encontrado"}), 404
 
     user.activo = False
     db.session.commit()
-    return jsonify({"msg": "User deactivated successfully"}), 200
+    return jsonify({"msg": "Usuario desactivado con éxito."}), 200
 
 @bp.route('/<uuid:user_id>/approve', methods=['POST'])
 @jwt_required()
@@ -67,11 +67,11 @@ def approve_user(user_id):
     """Approve a pending user. Admin only."""
     user = db.session.get(Usuario, user_id)
     if not user:
-        return jsonify({"msg": "User not found"}), 404
+        return jsonify({"msg": "Usuario no encontrado"}), 404
 
     if user.activo:
-        return jsonify({"msg": "User is already active"}), 409
+        return jsonify({"msg": "El usuario ya está activo"}), 409
 
     user.activo = True
     db.session.commit()
-    return jsonify({"msg": "User approved successfully"}), 200
+    return jsonify({"msg": "Usuario aprobado con éxito."}), 200

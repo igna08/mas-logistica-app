@@ -73,32 +73,123 @@
 </div>
 
 <script>
-// ... existing script ...
+document.addEventListener('DOMContentLoaded', function() {
 
-document.getElementById('edit-user-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const userId = document.querySelector('[x-data]').__x.$data.editingUser.id;
-    const formData = {
-        nombre: document.getElementById('edit-nombre').value,
-        rol: document.getElementById('edit-rol').value
-    };
+    function showAlert(message, color, containerId = 'alert-container') {
+        const alertContainer = document.getElementById(containerId);
+        if (!alertContainer) return;
+        const alert = document.createElement('div');
+        alert.className = `bg-${color}-100 border border-${color}-400 text-${color}-700 px-4 py-3 rounded relative`;
+        alert.role = 'alert';
+        alert.innerHTML = `<span class="block sm:inline">${message}</span>`;
+        alertContainer.innerHTML = ''; // Clear previous alerts
+        alertContainer.appendChild(alert);
+        setTimeout(() => {
+            if(alert.parentNode) {
+                alert.remove()
+            }
+        }, 5000);
+    }
 
-    try {
-        const response = await fetch(`/api/admin/users/${userId}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(formData)
-        });
-        const data = await response.json();
-        if (!response.ok) {
-            showAlert(data.msg || 'Error al actualizar.', 'red', 'edit-modal-alert-container');
-        } else {
-            showAlert('Usuario actualizado con éxito.', 'green');
-            // A simple way is to reload the page to see changes
-            window.location.reload();
+    // Event listener for Approve/Deactivate buttons
+    document.querySelector('.min-w-full').addEventListener('click', async function(e) {
+        if (e.target.matches('.action-btn')) {
+            const button = e.target;
+            const action = button.dataset.action;
+            const userId = button.dataset.id;
+            const url = `/api/admin/users/${userId}/${action}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert(data.msg, 'green');
+                    window.location.reload();
+                } else {
+                    showAlert(data.msg || 'Ocurrió un error.', 'red');
+                }
+            } catch (error) {
+                console.error('Action button error:', error);
+                showAlert('Error de conexión o del servidor.', 'red');
+            }
         }
-    } catch (error) {
-        showAlert('Error de conexión.', 'red', 'edit-modal-alert-container');
+    });
+
+    // Event listener for creating a user
+    const createUserForm = document.getElementById('create-user-form');
+    if(createUserForm) {
+        createUserForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = {
+                nombre: document.getElementById('nombre').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                rol: document.getElementById('rol').value,
+            };
+
+            try {
+                const response = await fetch('/api/auth/register/admin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showAlert(data.msg || 'Error al crear usuario.', 'red', 'create-modal-alert-container');
+                } else {
+                    showAlert('Usuario creado con éxito.', 'green');
+                    window.location.reload();
+                }
+            } catch (error) {
+                 showAlert('Error de conexión.', 'red', 'create-modal-alert-container');
+            }
+        });
+    }
+
+    // Event listener for editing a user
+    const editUserForm = document.getElementById('edit-user-form');
+    if(editUserForm) {
+        editUserForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            // This is a bit brittle, depends on AlpineJS internal structure
+            const userId = document.querySelector('[x-data]').__x.$data.editingUser.id;
+            if (!userId) {
+                showAlert('No se pudo encontrar el ID del usuario a editar.', 'red', 'edit-modal-alert-container');
+                return;
+            }
+
+            const formData = {
+                nombre: document.getElementById('edit-nombre').value,
+                rol: document.getElementById('edit-rol').value
+            };
+
+            try {
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showAlert(data.msg || 'Error al actualizar.', 'red', 'edit-modal-alert-container');
+                } else {
+                    showAlert('Usuario actualizado con éxito.', 'green');
+                    window.location.reload();
+                }
+            } catch (error) {
+                showAlert('Error de conexión.', 'red', 'edit-modal-alert-container');
+            }
+        });
     }
 });
 </script>
