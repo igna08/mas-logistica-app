@@ -2,6 +2,8 @@ import uuid
 from sqlalchemy import UUID
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
+from .associations import vehiculo_chofer_association
+from sqlalchemy.orm import relationship
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -21,5 +23,22 @@ class Usuario(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    vehiculos_asignados = relationship(
+        "Vehiculo",
+        secondary=vehiculo_chofer_association,
+        back_populates="choferes_asignados"
+    )
+
     def __repr__(self):
         return f'<Usuario {self.nombre}>'
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "nombre": self.nombre,
+            "email": self.email,
+            "rol": self.rol,
+            "activo": self.activo,
+            "profile_picture_url": self.profile_picture_url,
+            "creado_en": self.creado_en.isoformat()
+        }

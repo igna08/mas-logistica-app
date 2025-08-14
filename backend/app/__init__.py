@@ -44,6 +44,15 @@ def create_app(config_name='default'):
     from .api.admin.users import bp as admin_users_bp
     app.register_blueprint(admin_users_bp)
 
+    from .api.admin.dashboard import bp as admin_dashboard_api_bp
+    app.register_blueprint(admin_dashboard_api_bp)
+
+    from .api.reports import bp as reports_api_bp
+    app.register_blueprint(reports_api_bp)
+
+    from .api.assignments import bp as assignments_api_bp
+    app.register_blueprint(assignments_api_bp)
+
     from .main import bp as main_bp
     app.register_blueprint(main_bp)
 

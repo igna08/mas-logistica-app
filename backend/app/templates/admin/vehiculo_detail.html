@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de Vehículo - {{ super() }}{% endblock %}
+
+{% block page_title %}Detalle de Vehículo: {{ vehiculo.patente }}{% endblock %}
+
+{% block content %}
+<div x-data="{ vehiculoId: '{{ vehiculo.id }}' }">
+    <div id="alert-container" class="mb-4"></div>
+
+    <!-- Assigned Drivers List -->
+    <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+        <h2 class="text-xl font-semibold mb-4">Choferes Asignados</h2>
+        <ul id="assigned-list" class="space-y-2">
+            {% for chofer in vehiculo.choferes_asignados %}
+            <li id="chofer-{{ chofer.id }}" class="flex justify-between items-center">
+                <span>{{ chofer.nombre }}</span>
+                <button @click="handleAssignment('unassign', '{{ chofer.id }}')" class="text-red-500 hover:text-red-700 text-sm">Desasignar</button>
+            </li>
+            {% else %}
+            <li id="no-assigned-msg">No hay choferes asignados a este vehículo.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Assign New Driver Form -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-semibold mb-4">Asignar Nuevo Chofer</h2>
+        <div class="flex space-x-4">
+            <select id="chofer-to-assign" class="flex-grow mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm">
+                <option value="">-- Seleccionar un chofer --</option>
+                {% for chofer in unassigned_choferes %}
+                <option value="{{ chofer.id }}">{{ chofer.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button @click="handleAssignment('assign', document.getElementById('chofer-to-assign').value)" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Asignar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+async function handleAssignment(action, choferId) {
+    if (!choferId) {
+        showAlert('Por favor, seleccione un chofer.', 'red');
+        return;
+    }
+    const vehiculoId = document.querySelector('[x-data]').__x.$data.vehiculoId;
+    const url = '/api/assignments/';
+    const method = (action === 'assign') ? 'POST' : 'DELETE';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chofer_id: choferId, vehiculo_id: vehiculoId })
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            showAlert(`Error: ${data.msg || 'Ocurrió un error.'}`, 'red');
+        } else {
+            showAlert(data.msg, 'green');
+            // Simple reload to see changes. A more advanced UI would update dynamically.
+            setTimeout(() => window.location.reload(), 1500);
+        }
+    } catch (error) {
+        showAlert('Error de conexión con el servidor.', 'red');
+    }
+}
+
+function showAlert(message, color) {
+    const container = document.getElementById('alert-container');
+    container.innerHTML = '';
+    const alert = document.createElement('div');
+    alert.className = `bg-${color}-100 border border-${color}-400 text-${color}-700 px-4 py-3 rounded relative`;
+    alert.textContent = message;
+    container.appendChild(alert);
+    setTimeout(() => alert.remove(), 5000);
+}
+</script>
+{% endblock %}

@@ -163,30 +163,32 @@ def reports():
     if user.rol not in ['admin', 'mantenimiento']:
         return redirect(url_for('main.index'))
 
-    query = Recorrido.query
-
-    # Filtering logic
-    chofer_id = request.args.get('chofer')
-    vehiculo_id = request.args.get('vehiculo')
-    fecha_desde = request.args.get('fecha_desde')
-    fecha_hasta = request.args.get('fecha_hasta')
-
-    if chofer_id:
-        query = query.filter(Recorrido.chofer_id == chofer_id)
-    if vehiculo_id:
-        query = query.filter(Recorrido.vehiculo_id == vehiculo_id)
-    if fecha_desde:
-        query = query.filter(Recorrido.fecha_inicio >= fecha_desde)
-    if fecha_hasta:
-        query = query.filter(Recorrido.fecha_inicio <= fecha_hasta)
-
-    recorridos = query.order_by(Recorrido.fecha_inicio.desc()).all()
-
-    # Data for filter dropdowns
+    # The data for the table will be fetched by JS.
+    # We just need to provide the data for the filter dropdowns.
     choferes = Usuario.query.filter_by(rol='chofer').order_by(Usuario.nombre).all()
     vehiculos = Vehiculo.query.order_by(Vehiculo.patente).all()
 
     return render_template('reports.html',
-                           recorridos=recorridos,
                            choferes=choferes,
                            vehiculos=vehiculos)
+
+@bp.route('/admin/vehiculo/<uuid:vehiculo_id>')
+@login_required_for_templates
+def vehiculo_detail(vehiculo_id):
+    """Renders the vehicle detail and driver assignment page."""
+    user = get_current_user_role()
+    if user.rol not in ['admin', 'mantenimiento']:
+        return redirect(url_for('main.index'))
+
+    vehiculo = db.session.get(Vehiculo, vehiculo_id)
+    if not vehiculo:
+        return "Vehiculo no encontrado", 404
+
+    # Get choferes that are not already assigned to this vehicle
+    all_choferes = Usuario.query.filter_by(rol='chofer', activo=True).all()
+    assigned_chofer_ids = {c.id for c in vehiculo.choferes_asignados}
+    unassigned_choferes = [c for c in all_choferes if c.id not in assigned_chofer_ids]
+
+    return render_template('admin/vehiculo_detail.html',
+                           vehiculo=vehiculo,
+                           unassigned_choferes=unassigned_choferes)
