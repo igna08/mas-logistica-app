@@ -1,11 +1,12 @@
 from functools import wraps
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, g
+from flask import Blueprint, render_template, redirect, url_for, g, request
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 import uuid
 
 from app.models import Usuario, Vehiculo, Recorrido
 from app.extensions import db
+from sqlalchemy import func, extract
 
 bp = Blueprint('main', __name__)
 
@@ -67,11 +68,39 @@ def login():
     """Renders the login page."""
     return render_template('login.html')
 
+@bp.route('/register')
+def register_page():
+    """Renders the public registration page."""
+    return render_template('register.html')
+
 @bp.route('/admin/dashboard')
 @login_required_for_templates
 def admin_dashboard():
-    # Placeholder data for now
-    return render_template('admin/dashboard.html')
+    # Metrics calculation
+    active_vehicles = Vehiculo.query.filter_by(activo=True).count()
+    active_drivers = Usuario.query.filter_by(rol='chofer', activo=True).count()
+
+    now = datetime.utcnow()
+    recorridos_this_month = Recorrido.query.filter(
+        extract('month', Recorrido.fecha_inicio) == now.month,
+        extract('year', Recorrido.fecha_inicio) == now.year
+    ).count()
+
+    total_km_this_month = db.session.query(
+        func.sum(Recorrido.km_final - Recorrido.km_inicial)
+    ).filter(
+        extract('month', Recorrido.fecha_inicio) == now.month,
+        extract('year', Recorrido.fecha_inicio) == now.year
+    ).scalar() or 0
+
+    metrics = {
+        'active_vehicles': active_vehicles,
+        'active_drivers': active_drivers,
+        'recorridos_this_month': recorridos_this_month,
+        'total_km_this_month': total_km_this_month
+    }
+
+    return render_template('admin/dashboard.html', metrics=metrics)
 
 @bp.route('/mantenimiento/panel')
 @login_required_for_templates
@@ -132,12 +161,30 @@ def reports():
     """Renders a unified reports page with filters."""
     user = get_current_user_role()
     if user.rol not in ['admin', 'mantenimiento']:
-        return redirect(url_for('main.index')) # Or show an unauthorized page
+        return redirect(url_for('main.index'))
 
-    # This is a basic query. A real implementation would use request.args for filtering.
-    recorridos = Recorrido.query.order_by(Recorrido.fecha_inicio.desc()).all()
-    choferes = Usuario.query.filter_by(rol='chofer').all()
-    vehiculos = Vehiculo.query.all()
+    query = Recorrido.query
+
+    # Filtering logic
+    chofer_id = request.args.get('chofer')
+    vehiculo_id = request.args.get('vehiculo')
+    fecha_desde = request.args.get('fecha_desde')
+    fecha_hasta = request.args.get('fecha_hasta')
+
+    if chofer_id:
+        query = query.filter(Recorrido.chofer_id == chofer_id)
+    if vehiculo_id:
+        query = query.filter(Recorrido.vehiculo_id == vehiculo_id)
+    if fecha_desde:
+        query = query.filter(Recorrido.fecha_inicio >= fecha_desde)
+    if fecha_hasta:
+        query = query.filter(Recorrido.fecha_inicio <= fecha_hasta)
+
+    recorridos = query.order_by(Recorrido.fecha_inicio.desc()).all()
+
+    # Data for filter dropdowns
+    choferes = Usuario.query.filter_by(rol='chofer').order_by(Usuario.nombre).all()
+    vehiculos = Vehiculo.query.order_by(Vehiculo.patente).all()
 
     return render_template('reports.html',
                            recorridos=recorridos,

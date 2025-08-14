@@ -59,3 +59,24 @@ def test_non_admin_cannot_access(test_client, session):
 
     resp = test_client.get('/api/admin/users/')
     assert resp.status_code == 403
+
+def test_admin_approve_user(test_client, session):
+    """
+    GIVEN a logged-in admin and an inactive user
+    WHEN the admin calls the approve endpoint
+    THEN the user's 'activo' flag should be True.
+    """
+    admin = Usuario(nombre="Test Admin", email="admin@test.com", rol="admin")
+    admin.set_password("password")
+    pending_user = Usuario(nombre="Pending User", email="pending@test.com", rol="chofer", activo=False)
+    pending_user.set_password("pending_password")
+    session.add_all([admin, pending_user])
+    session.commit()
+
+    login(test_client, "admin@test.com", "password")
+
+    resp = test_client.post(f'/api/admin/users/{pending_user.id}/approve')
+    assert resp.status_code == 200
+
+    session.refresh(pending_user)
+    assert pending_user.activo is True

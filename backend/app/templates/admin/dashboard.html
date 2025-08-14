@@ -2,31 +2,31 @@
 
 {% block title %}Admin Dashboard - {{ super() }}{% endblock %}
 
-{% block content %}
-<div class="container mx-auto">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Admin Dashboard</h1>
+{% block page_title %}Dashboard{% endblock %}
 
+{% block content %}
+<div>
     <!-- Métricas Principales -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Card 1: Vehículos Activos -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-sm font-medium text-gray-500">Vehículos Activos</h2>
-            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+            <p class="text-3xl font-bold text-gray-800 mt-2">{{ metrics.active_vehicles }}</p>
         </div>
         <!-- Card 2: Choferes Activos -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-sm font-medium text-gray-500">Choferes Activos</h2>
-            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+            <p class="text-3xl font-bold text-gray-800 mt-2">{{ metrics.active_drivers }}</p>
         </div>
         <!-- Card 3: Recorridos este mes -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-sm font-medium text-gray-500">Recorridos (Mes Actual)</h2>
-            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+            <p class="text-3xl font-bold text-gray-800 mt-2">{{ metrics.recorridos_this_month }}</p>
         </div>
         <!-- Card 4: KM Recorridos este mes -->
         <div class="bg-white p-6 rounded-lg shadow-md">
             <h2 class="text-sm font-medium text-gray-500">KM Recorridos (Mes Actual)</h2>
-            <p class="text-3xl font-bold text-gray-800 mt-2">--</p>
+            <p class="text-3xl font-bold text-gray-800 mt-2">{{ '%.2f'|format(metrics.total_km_this_month|float) }}</p>
         </div>
     </div>
 

@@ -39,7 +39,7 @@ def test_admin_dashboard_access(test_client, session):
     # Check direct access
     resp = test_client.get('/admin/dashboard')
     assert resp.status_code == 200
-    assert b'Admin Dashboard' in resp.data
+    assert 'Vehículos Activos' in resp.data.decode('utf-8') # Check for content in a card
 
 def test_chofer_dashboard_access(test_client, session):
     """
@@ -62,4 +62,4 @@ def test_chofer_dashboard_access(test_client, session):
     # Check direct access
     resp = test_client.get('/chofer/dashboard')
     assert resp.status_code == 200
-    assert b'Panel de Chofer' in resp.data
+    assert 'Estado Actual' in resp.data.decode('utf-8') # Check for content in the main card

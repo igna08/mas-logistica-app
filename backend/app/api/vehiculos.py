@@ -10,9 +10,9 @@ bp = Blueprint('vehiculos', __name__, url_prefix='/api/vehiculos')
 
 @bp.route('/', methods=['POST'])
 @jwt_required()
-@requires_roles('admin')
+@requires_roles('admin', 'mantenimiento')
 def create_vehiculo():
-    """Create a new vehicle. Admin only."""
+    """Create a new vehicle. Admin/Mantenimiento only."""
     try:
         vehiculo_data = VehiculoCreate.model_validate(request.json)
     except ValidationError as e:
@@ -49,9 +49,9 @@ def get_vehiculo(vehiculo_id):
 
 @bp.route('/<uuid:vehiculo_id>', methods=['PUT'])
 @jwt_required()
-@requires_roles('admin')
+@requires_roles('admin', 'mantenimiento')
 def update_vehiculo(vehiculo_id):
-    """Update a vehicle. Admin only."""
+    """Update a vehicle. Admin/Mantenimiento only."""
     vehiculo = VehiculoModel.query.get_or_404(vehiculo_id)
 
     try:

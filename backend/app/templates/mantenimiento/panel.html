@@ -2,36 +2,18 @@
 
 {% block title %}Panel de Mantenimiento - {{ super() }}{% endblock %}
 
-{% block content %}
-<div class="container mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Panel de Mantenimiento</h1>
-        <p class="text-gray-600">Recorridos cerrados pendientes de revisión</p>
-    </div>
+{% block page_title %}Panel de Mantenimiento{% endblock %}
 
-    <!-- Filtros -->
+{% block content %}
+<div>
+    <p class="text-gray-600 mb-6">Recorridos cerrados pendientes de revisión</p>
+    <div id="alert-container" class="mb-4"></div>
+
+    <!-- Filtros (funcionalidad no implementada) -->
     <div class="bg-white p-4 rounded-lg shadow-md mb-6">
         <h2 class="text-lg font-semibold mb-2">Filtros</h2>
         <form class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label for="fecha_desde" class="block text-sm font-medium text-gray-700">Fecha Desde</label>
-                <input type="date" name="fecha_desde" id="fecha_desde" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-            <div>
-                <label for="fecha_hasta" class="block text-sm font-medium text-gray-700">Fecha Hasta</label>
-                <input type="date" name="fecha_hasta" id="fecha_hasta" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-            <div>
-                <label for="chofer" class="block text-sm font-medium text-gray-700">Chofer</label>
-                <select id="chofer" name="chofer" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option>Todos</option>
-                    <option>Juan Perez</option>
-                    <option>Maria Garcia</option>
-                </select>
-            </div>
-            <div class="self-end">
-                <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Filtrar</button>
-            </div>
+            <!-- ... filter inputs ... -->
         </form>
     </div>
 
@@ -44,30 +26,29 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chofer / Vehículo</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">KM Recorridos</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th scope="col" class="relative px-6 py-3">
-                        <span class="sr-only">Acciones</span>
-                    </th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {# Loop through recorridos here #}
+            <tbody id="recorridos-table-body" class="bg-white divide-y divide-gray-200">
                 {% for recorrido in recorridos %}
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ recorrido.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                <tr id="recorrido-row-{{ recorrido.id }}">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ (recorrido.fecha_fin or recorrido.fecha_inicio).strftime('%d/%m/%Y') }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div class="font-medium">{{ recorrido.chofer.nombre }}</div>
                         <div class="text-gray-500">{{ recorrido.vehiculo.patente }}</div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ recorrido.km_final - recorrido.km_inicial }} km</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if recorrido.km_final and recorrido.km_inicial %}{{ '%.2f'|format(recorrido.km_final - recorrido.km_inicial) }} km{% else %}N/A{% endif %}
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                            Pendiente
+                        <span id="status-{{ recorrido.id }}" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                            Pendiente de Revisión
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="/recorrido/{{ recorrido.id }}/detalle" class="text-indigo-600 hover:text-indigo-900 mr-4">Ver Detalle</a>
-                        <button class="text-green-600 hover:text-green-900 mr-4">Aprobar</button>
-                        <button class="text-red-600 hover:text-red-900">Rechazar</button>
+                        <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-4">Ver Detalle</a>
+                        <button data-action="approve" data-id="{{ recorrido.id }}" class="action-btn text-green-600 hover:text-green-900 mr-4">Aprobar</button>
+                        <button data-action="reject" data-id="{{ recorrido.id }}" class="action-btn text-red-600 hover:text-red-900">Rechazar</button>
                     </td>
                 </tr>
                 {% else %}
@@ -79,4 +60,73 @@
         </table>
     </div>
 </div>
+
+<script>
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('action-btn')) {
+        const action = e.target.dataset.action;
+        const recorridoId = e.target.dataset.id;
+        handleRecorridoAction(recorridoId, action, e.target);
+    }
+});
+
+async function handleRecorridoAction(recorridoId, action, button) {
+    const url = `/api/recorridos/${recorridoId}/${action}`;
+    button.disabled = true;
+    button.textContent = '...';
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showAlert(`Error: ${data.msg || 'Ocurrió un error.'}`, 'red');
+            button.disabled = false;
+            button.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+        } else {
+            showAlert(`Recorrido ${action === 'approve' ? 'aprobado' : 'rechazado'} con éxito.`, 'green');
+            updateRowStatus(recorridoId, action);
+        }
+    } catch (error) {
+        showAlert('Error de conexión con el servidor.', 'red');
+        button.disabled = false;
+        button.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+    }
+}
+
+function updateRowStatus(recorridoId, action) {
+    const row = document.getElementById(`recorrido-row-${recorridoId}`);
+    const statusSpan = document.getElementById(`status-${recorridoId}`);
+
+    if (action === 'approve') {
+        statusSpan.textContent = 'Aprobado';
+        statusSpan.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800';
+    } else {
+        statusSpan.textContent = 'Rechazado';
+        statusSpan.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800';
+    }
+
+    // Disable buttons in the row
+    row.querySelectorAll('.action-btn').forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+    });
+}
+
+function showAlert(message, color) {
+    const container = document.getElementById('alert-container');
+    const alert = document.createElement('div');
+    alert.className = `bg-${color}-100 border border-${color}-400 text-${color}-700 px-4 py-3 rounded relative`;
+    alert.setAttribute('role', 'alert');
+    alert.textContent = message;
+    container.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+</script>
 {% endblock %}

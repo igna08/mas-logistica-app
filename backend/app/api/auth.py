@@ -77,3 +77,31 @@ def register():
     db.session.refresh(new_user)
 
     return jsonify(UsuarioSchema.model_validate(new_user).model_dump()), 201
+
+@bp.route('/public-register', methods=['POST'])
+def public_register():
+    """Public registration for new users (chofer or mantenimiento)."""
+    try:
+        # We can reuse UsuarioCreate, but rol will be limited
+        user_data = UsuarioCreate.model_validate(request.json)
+    except ValidationError as e:
+        return jsonify(e.errors()), 400
+
+    if user_data.rol not in ['chofer', 'mantenimiento']:
+        return jsonify({"msg": "Rol no válido para registro público."}), 400
+
+    if Usuario.query.filter_by(email=user_data.email).first():
+        return jsonify({"msg": "El email ya está en uso"}), 409
+
+    new_user = Usuario(
+        email=user_data.email,
+        nombre=user_data.nombre,
+        rol=user_data.rol,
+        activo=False  # User starts as inactive, pending admin approval
+    )
+    new_user.set_password(user_data.password)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"msg": "Registro exitoso. Su cuenta está pendiente de aprobación."}), 201

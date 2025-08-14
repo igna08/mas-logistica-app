@@ -15,3 +15,15 @@ celery.Task = ContextTask
 
 # To ensure tasks are registered, you can import the tasks module
 from app import tasks
+
+# Add the beat schedule
+celery.conf.beat_schedule = {
+    'send-weekly-report': {
+        'task': 'tasks.generate_weekly_report',
+        'schedule': 3600.0 * 24 * 7, # every 7 days
+        # For more complex schedules, use crontab:
+        # from celery.schedules import crontab
+        # 'schedule': crontab(hour=7, day_of_week=1), # Every Monday at 7am
+    },
+}
+celery.conf.timezone = 'UTC'

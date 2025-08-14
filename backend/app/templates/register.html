@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Registro - {{ super() }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-[60vh]">
+    <div class="w-full max-w-md">
+        <form id="register-form" class="bg-white shadow-md rounded-lg px-8 pt-6 pb-8 mb-4">
+            <h1 class="text-2xl font-bold text-center text-gray-800 mb-6">Crear Cuenta</h1>
+
+            <div id="alert-container"></div>
+
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="nombre">Nombre Completo</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="nombre" type="text" placeholder="Juan Perez" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="email" type="email" placeholder="tu@email.com" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Contraseña</label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700" id="password" type="password" required>
+            </div>
+            <div class="mb-6">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="rol">Rol</label>
+                <select id="rol" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <option value="chofer">Chofer</option>
+                    <option value="mantenimiento">Mantenimiento</option>
+                </select>
+            </div>
+            <div class="flex items-center justify-between">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    Registrarse
+                </button>
+                <a class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800" href="{{ url_for('main.login') }}">
+                    ¿Ya tienes cuenta? Inicia Sesión
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.getElementById('register-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const alertContainer = document.getElementById('alert-container');
+        alertContainer.innerHTML = '';
+
+        const formData = {
+            nombre: document.getElementById('nombre').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            rol: document.getElementById('rol').value,
+        };
+
+        try {
+            const response = await fetch('/api/auth/public-register', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(formData),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+                showAlert(data.msg || 'Error desconocido.', 'red');
+            } else {
+                showAlert(data.msg, 'green');
+                document.getElementById('register-form').reset();
+            }
+        } catch (error) {
+            showAlert('No se pudo conectar con el servidor.', 'red');
+        }
+    });
+
+    function showAlert(message, color) {
+        const alert = document.createElement('div');
+        alert.className = `bg-${color}-100 border border-${color}-400 text-${color}-700 px-4 py-3 rounded relative mb-4`;
+        alert.setAttribute('role', 'alert');
+        alert.textContent = message;
+        document.getElementById('alert-container').appendChild(alert);
+    }
+</script>
+{% endblock %}
