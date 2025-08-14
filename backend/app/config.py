@@ -5,7 +5,7 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'a-very-secret-key'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'postgresql://user:password@db:5432/vehiculos_db'
+        'postgresql://neondb_owner:npg_Q1lLRW0cxNYU@ep-lively-bar-a44jhrk4-pooler.us-east-1.aws.neon.tech:5432/mas?sslmode=require&channel_binding=require'
 
     # JWT Configuration
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'another-super-secret'
