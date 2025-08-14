@@ -68,6 +68,11 @@ def login():
     """Renders the login page."""
     return render_template('login.html')
 
+@bp.route('/register')
+def register_page():
+    """Renders the public registration page."""
+    return render_template('register.html')
+
 @bp.route('/admin/dashboard')
 @login_required_for_templates
 def admin_dashboard():

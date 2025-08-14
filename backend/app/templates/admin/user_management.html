@@ -2,10 +2,12 @@
 
 {% block title %}Gestión de Usuarios - {{ super() }}{% endblock %}
 
+{% block page_title %}Gestión de Usuarios{% endblock %}
+
 {% block content %}
-<div class="container mx-auto">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">Gestión de Usuarios</h1>
+<div>
+    <div id="alert-container" class="mb-4"></div>
+    <div class="flex justify-end items-center mb-6">
         <button class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
             Crear Nuevo Usuario
         </button>
@@ -19,14 +21,12 @@
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                    <th scope="col" class="relative px-6 py-3">
-                        <span class="sr-only">Acciones</span>
-                    </th>
+                    <th scope="col" class="relative px-6 py-3"><span class="sr-only">Acciones</span></th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {% for user in users %}
-                <tr>
+                <tr id="user-row-{{ user.id }}">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
@@ -38,26 +38,20 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="text-sm text-gray-900">{{ user.rol|capitalize }}</span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm text-gray-900">{{ user.rol|capitalize }}</span></td>
+                    <td class="px-6 py-4 whitespace-nowrap" id="status-cell-{{ user.id }}">
                         {% if user.activo %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                Activo
-                            </span>
+                            <span class="status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
                         {% else %}
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                Inactivo
-                            </span>
+                            <span class="status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Pendiente Aprobación</span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium" id="actions-cell-{{ user.id }}">
                         <a href="#" class="text-indigo-600 hover:text-indigo-900">Editar</a>
                         {% if user.activo %}
-                            <a href="#" class="ml-4 text-red-600 hover:text-red-900">Desactivar</a>
+                            <button data-action="deactivate" data-id="{{ user.id }}" class="action-btn ml-4 text-red-600 hover:text-red-900">Desactivar</button>
                         {% else %}
-                            <a href="#" class="ml-4 text-green-600 hover:text-green-900">Activar</a>
+                            <button data-action="approve" data-id="{{ user.id }}" class="action-btn ml-4 text-green-600 hover:text-green-900">Aprobar</button>
                         {% endif %}
                     </td>
                 </tr>
@@ -66,4 +60,80 @@
         </table>
     </div>
 </div>
+
+<script>
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.classList.contains('action-btn')) {
+        const action = e.target.dataset.action;
+        const userId = e.target.dataset.id;
+        handleUserAction(userId, action, e.target);
+    }
+});
+
+async function handleUserAction(userId, action, button) {
+    let url, method;
+    if (action === 'approve') {
+        url = `/api/admin/users/${userId}/approve`;
+        method = 'POST';
+    } else if (action === 'deactivate') {
+        url = `/api/admin/users/${userId}`;
+        method = 'DELETE';
+    } else {
+        return;
+    }
+
+    button.disabled = true;
+    button.textContent = '...';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {'Content-Type': 'application/json'}
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            showAlert(`Error: ${data.msg || 'Ocurrió un error.'}`, 'red');
+            button.disabled = false;
+        } else {
+            showAlert(`Usuario ${action === 'approve' ? 'aprobado' : 'desactivado'} con éxito.`, 'green');
+            updateUserRow(userId, action);
+        }
+    } catch (error) {
+        showAlert('Error de conexión con el servidor.', 'red');
+        button.disabled = false;
+    }
+}
+
+function updateUserRow(userId, action) {
+    const statusCell = document.getElementById(`status-cell-${userId}`);
+    const actionsCell = document.getElementById(`actions-cell-${userId}`);
+
+    if (action === 'approve') {
+        statusCell.innerHTML = `<span class="status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>`;
+        actionsCell.innerHTML = `
+            <a href="#" class="text-indigo-600 hover:text-indigo-900">Editar</a>
+            <button data-action="deactivate" data-id="${userId}" class="action-btn ml-4 text-red-600 hover:text-red-900">Desactivar</button>
+        `;
+    } else { // deactivate
+        statusCell.innerHTML = `<span class="status-badge px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>`;
+        // We don't provide an "activate" button here, but one could be added
+        actionsCell.innerHTML = `<a href="#" class="text-indigo-600 hover:text-indigo-900">Editar</a>`;
+    }
+}
+
+function showAlert(message, color) {
+    const container = document.getElementById('alert-container');
+    container.innerHTML = ''; // Clear previous alerts
+    const alert = document.createElement('div');
+    alert.className = `bg-${color}-100 border border-${color}-400 text-${color}-700 px-4 py-3 rounded relative`;
+    alert.setAttribute('role', 'alert');
+    alert.textContent = message;
+    container.appendChild(alert);
+
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+</script>
 {% endblock %}

@@ -1,6 +1,6 @@
 from flask import Flask
 from .config import config
-from .extensions import db, migrate, jwt, celery
+from .extensions import db, migrate, jwt, celery, mail
 
 def create_app(config_name='default'):
     """
@@ -13,6 +13,7 @@ def create_app(config_name='default'):
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    mail.init_app(app)
 
     # Configure Celery
     celery.conf.update(
