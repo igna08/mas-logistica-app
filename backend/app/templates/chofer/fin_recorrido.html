@@ -70,93 +70,172 @@
 <script>
 document.getElementById('fin-recorrido-form').addEventListener('submit', async function (e) {
     e.preventDefault();
+    
     const submitButton = document.getElementById('submit-button');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Procesando...';
-
     const errorAlert = document.getElementById('error-alert');
     const errorMessage = document.getElementById('error-message');
     const infoAlert = document.getElementById('info-alert');
     const infoMessage = document.getElementById('info-message');
+    
+    // Resetear estado inicial
+    submitButton.disabled = true;
+    submitButton.textContent = 'Procesando...';
     errorAlert.classList.add('hidden');
     infoAlert.classList.add('hidden');
 
     let fotoUrl = null;
     const fotoFile = document.getElementById('combustible_foto').files[0];
 
-    // Step 1: If there's a photo, upload it to S3 first
-    if (fotoFile) {
-        infoMessage.textContent = 'Subiendo foto...';
-        infoAlert.classList.remove('hidden');
-        try {
-            // 1a: Get pre-signed URL from our backend
-            const presignResponse = await fetch('/api/uploads/presign', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ filename: fotoFile.name, content_type: fotoFile.type })
-            });
-
-            if (!presignResponse.ok) throw new Error('Could not get pre-signed URL.');
-            const presignData = await presignResponse.json();
-
-            // 1b: Upload file to S3 using the pre-signed URL
-            const s3FormData = new FormData();
-            Object.entries(presignData.fields).forEach(([key, value]) => {
-                s3FormData.append(key, value);
-            });
-            s3FormData.append('file', fotoFile);
-
-            const s3Response = await fetch(presignData.url, {
-                method: 'POST',
-                body: s3FormData
-            });
-
-            if (!s3Response.ok) throw new Error('Failed to upload photo to storage.');
-
-            // The URL of the uploaded file
-            fotoUrl = `${presignData.url}${presignData.fields.key}`;
-            infoMessage.textContent = 'Foto subida. Finalizando recorrido...';
-
-        } catch (error) {
-            errorMessage.textContent = `Error con la foto: ${error.message}`;
-            errorAlert.classList.remove('hidden');
-            submitButton.disabled = false;
-            submitButton.textContent = 'Finalizar y Cerrar Recorrido';
-            return;
-        }
-    }
-
-    // Step 2: Submit the rest of the form data to our backend
-    const finData = {
-        km_final: document.getElementById('km_final').value,
-        estado_final: document.getElementById('estado_final').value,
-        combustible_litros: document.getElementById('combustible_litros').value || null,
-        combustible_costo: document.getElementById('combustible_costo').value || null,
-        observaciones_fin: document.getElementById('observaciones_fin').value,
-        combustible_foto: fotoUrl
-    };
-
     try {
-        const recorridoId = '{{ recorrido.id }}';
-        const response = await fetch(`/api/recorridos/${recorridoId}/fin`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(finData)
-        });
+        // Paso 1: Si hay foto, subirla a través del backend
+        if (fotoFile) {
+            infoMessage.textContent = 'Subiendo foto del comprobante...';
+            infoAlert.classList.remove('hidden');
+            
+            console.log('Iniciando subida de archivo:', fotoFile.name, fotoFile.type, fotoFile.size);
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const uploadHeaders = {};
+                
+                if (token) {
+                    uploadHeaders['Authorization'] = `Bearer ${token}`;
+                }
 
-        const data = await response.json();
+                // Crear FormData para el archivo
+                const uploadFormData = new FormData();
+                uploadFormData.append('file', fotoFile);
 
-        if (!response.ok) {
-            errorMessage.textContent = data.msg || 'Error al finalizar el recorrido.';
-            errorAlert.classList.remove('hidden');
-        } else {
-            alert('Recorrido finalizado con éxito!');
-            window.location.href = '/chofer/dashboard';
+                const uploadResponse = await fetch('/api/uploads/upload', {
+                    method: 'POST',
+                    headers: uploadHeaders,
+                    body: uploadFormData
+                });
+
+                if (!uploadResponse.ok) {
+                    const errorData = await uploadResponse.json();
+                    throw new Error(errorData.msg || `Error al subir archivo: ${uploadResponse.status}`);
+                }
+                
+                const uploadData = await uploadResponse.json();
+                fotoUrl = uploadData.file_url;
+                console.log('Foto subida exitosamente:', fotoUrl);
+                
+            } catch (uploadError) {
+                console.error('Error en subida:', uploadError);
+                throw new Error(`Error al subir la foto: ${uploadError.message}`);
+            }
         }
+
+        // Paso 2: Enviar datos del formulario
+        infoMessage.textContent = fotoFile ? 'Foto subida. Finalizando recorrido...' : 'Finalizando recorrido...';
+        infoAlert.classList.remove('hidden');
+
+        // Validar campos requeridos
+        const kmFinalValue = document.getElementById('km_final').value;
+        if (!kmFinalValue || isNaN(parseFloat(kmFinalValue))) {
+            throw new Error('El kilometraje final es requerido y debe ser un número válido');
+        }
+
+        const formData = {
+            km_final: parseFloat(kmFinalValue),
+            estado_final: document.getElementById('estado_final').value.trim() || '',
+            combustible_litros: document.getElementById('combustible_litros').value ? 
+                parseFloat(document.getElementById('combustible_litros').value) : null,
+            combustible_costo: document.getElementById('combustible_costo').value ? 
+                parseFloat(document.getElementById('combustible_costo').value) : null,
+            observaciones_fin: document.getElementById('observaciones_fin').value.trim() || '',
+            combustible_foto: fotoUrl
+        };
+
+        console.log('Enviando datos del formulario:', formData);
+
+        const recorridoId = '{{ recorrido.id }}';
+        const apiUrl = `/api/recorridos/${recorridoId}/fin`;
+        
+        console.log('URL del API:', apiUrl);
+        console.log('Datos a enviar:', JSON.stringify(formData, null, 2));
+
+        let formResponse;
+        try {
+            // Obtener token JWT (asumiendo que está guardado en localStorage)
+            const token = localStorage.getItem('access_token');
+            const headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            };
+            
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+                console.log('Token JWT encontrado y agregado a headers');
+            } else {
+                console.warn('No se encontró token JWT - esto puede causar error 401');
+            }
+
+            formResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(formData)
+            });
+        } catch (fetchError) {
+            console.error('Error en fetch:', fetchError);
+            throw new Error('No se pudo conectar con el servidor. Verifique su conexión a internet.');
+        }
+
+        console.log('Respuesta del servidor - Status:', formResponse.status);
+        console.log('Respuesta del servidor - Headers:', [...formResponse.headers.entries()]);
+
+        let responseData;
+        try {
+            const responseText = await formResponse.text();
+            console.log('Respuesta del servidor - Text:', responseText);
+            
+            if (responseText) {
+                responseData = JSON.parse(responseText);
+            } else {
+                responseData = { msg: 'Respuesta vacía del servidor' };
+            }
+        } catch (parseError) {
+            console.error('Error al parsear respuesta:', parseError);
+            throw new Error(`Error del servidor (${formResponse.status}): Respuesta inválida`);
+        }
+
+        if (!formResponse.ok) {
+            console.error('Error del servidor:', responseData);
+            throw new Error(responseData.msg || `Error del servidor: ${formResponse.status} ${formResponse.statusText}`);
+        }
+
+        // Éxito
+        console.log('Recorrido finalizado exitosamente');
+        infoMessage.textContent = 'Recorrido finalizado exitosamente. Redirigiendo...';
+        
+        setTimeout(() => {
+            window.location.href = '/chofer/dashboard';
+        }, 1500);
+
     } catch (error) {
-        errorMessage.textContent = 'No se pudo conectar con el servidor.';
+        console.error('Error detallado:', error);
+        console.error('Stack trace:', error.stack);
+        
+        let userMessage = 'Error inesperado al procesar la solicitud';
+        
+        if (error.message) {
+            if (error.message.includes('fetch')) {
+                userMessage = 'Error de conexión: No se pudo conectar con el servidor';
+            } else if (error.message.includes('Failed to fetch')) {
+                userMessage = 'Error de red: Verifique su conexión a internet';
+            } else if (error.message.includes('JSON')) {
+                userMessage = 'Error de formato: Respuesta inválida del servidor';
+            } else {
+                userMessage = error.message;
+            }
+        }
+        
+        errorMessage.textContent = userMessage;
         errorAlert.classList.remove('hidden');
-    } finally {
+        infoAlert.classList.add('hidden');
+        
+        // Restaurar botón
         submitButton.disabled = false;
         submitButton.textContent = 'Finalizar y Cerrar Recorrido';
     }
