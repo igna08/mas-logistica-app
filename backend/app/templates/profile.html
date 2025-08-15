@@ -41,92 +41,109 @@
 </div>
 
 <script>
-document.getElementById('profile_picture').addEventListener('change', function(event) {
-    const [file] = event.target.files;
-    if (file) {
-        document.getElementById('profile-img-preview').src = URL.createObjectURL(file);
-    }
-});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('profile_picture').addEventListener('change', function(event) {
+        const [file] = event.target.files;
+        if (file) {
+            document.getElementById('profile-img-preview').src = URL.createObjectURL(file);
+        }
+    });
 
-document.getElementById('profile-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const submitButton = document.getElementById('submit-button');
-    submitButton.disabled = true;
-    submitButton.textContent = 'Guardando...';
+    document.getElementById('profile-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const submitButton = document.getElementById('submit-button');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Guardando...';
 
-    const errorAlert = document.getElementById('error-alert');
-    const successAlert = document.getElementById('success-alert');
-    errorAlert.classList.add('hidden');
-    successAlert.classList.add('hidden');
+        const errorAlert = document.getElementById('error-alert');
+        const successAlert = document.getElementById('success-alert');
+        errorAlert.classList.add('hidden');
+        successAlert.classList.add('hidden');
 
-    let newFotoUrl = null;
-    const fotoFile = document.getElementById('profile_picture').files[0];
+        let newFotoUrl = null;
+        const fotoFile = document.getElementById('profile_picture').files[0];
 
-    if (fotoFile) {
-        try {
-            const presignResponse = await fetch('/api/uploads/presign', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ filename: fotoFile.name, content_type: fotoFile.type })
-            });
-            if (!presignResponse.ok) throw new Error('No se pudo obtener la URL para subir la imagen.');
+        if (fotoFile) {
+            try {
+                const presignResponse = await fetch('/api/uploads/presign', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ filename: fotoFile.name, content_type: fotoFile.type })
+                });
+                if (!presignResponse.ok) throw new Error('No se pudo obtener la URL para subir la imagen.');
 
-            const presignData = await presignResponse.json();
-            const s3FormData = new FormData();
-            Object.entries(presignData.fields).forEach(([key, value]) => s3FormData.append(key, value));
-            s3FormData.append('file', fotoFile);
+                const presignData = await presignResponse.json();
+                const s3FormData = new FormData();
+                Object.entries(presignData.fields).forEach(([key, value]) => s3FormData.append(key, value));
+                s3FormData.append('file', fotoFile);
 
-            const s3Response = await fetch(presignData.url, { method: 'POST', body: s3FormData });
-            if (!s3Response.ok) throw new Error('Falló la subida de la imagen.');
+                const s3Response = await fetch(presignData.url, { method: 'POST', body: s3FormData });
+                if (!s3Response.ok) throw new Error('Falló la subida de la imagen.');
 
-            newFotoUrl = `${presignData.url}${presignData.fields.key}`;
-        } catch (error) {
-            errorAlert.textContent = `Error con la foto: ${error.message}`;
-            errorAlert.classList.remove('hidden');
+                newFotoUrl = `${presignData.url}${presignData.fields.key}`;
+            } catch (error) {
+                errorAlert.textContent = `Error con la foto: ${error.message}`;
+                errorAlert.classList.remove('hidden');
+                submitButton.disabled = false;
+                submitButton.textContent = 'Guardar Cambios';
+                return;
+            }
+        }
+
+        const updateData = {
+            nombre: document.getElementById('nombre').value,
+            profile_picture_url: newFotoUrl
+        };
+
+        const finalData = Object.fromEntries(Object.entries(updateData).filter(([_, v]) => v != null));
+
+        if (Object.keys(finalData).length === 0 && fotoFile) {
+             // Photo was updated, but name wasn't. Refresh to see photo.
+            successAlert.textContent = 'Foto de perfil actualizada.';
+            successAlert.classList.remove('hidden');
+            setTimeout(() => window.location.reload(), 1500);
+            return;
+        } else if (Object.keys(finalData).length === 0) {
+            successAlert.textContent = 'No hay cambios para guardar.';
+            successAlert.classList.remove('hidden');
             submitButton.disabled = false;
             submitButton.textContent = 'Guardar Cambios';
             return;
         }
-    }
 
-    const updateData = {
-        nombre: document.getElementById('nombre').value,
-        profile_picture_url: newFotoUrl // Will be null if no new photo was uploaded
-    };
 
-    // Filter out null values so we only send what's changed
-    const finalData = Object.fromEntries(Object.entries(updateData).filter(([_, v]) => v != null));
+        try {
+            const response = await fetch('/api/users/me', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                },
+                body: JSON.stringify(finalData)
+            });
 
-    if (Object.keys(finalData).length === 0) {
-        successAlert.textContent = 'No hay cambios para guardar.';
-        successAlert.classList.remove('hidden');
-        submitButton.disabled = false;
-        submitButton.textContent = 'Guardar Cambios';
-        return;
-    }
-
-    try {
-        const response = await fetch('/api/users/me', {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(finalData)
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            errorAlert.textContent = data.msg || 'Error al actualizar el perfil.';
+            const data = await response.json();
+            if (!response.ok) {
+                errorAlert.textContent = data.msg || 'Error al actualizar el perfil.';
+                errorAlert.classList.remove('hidden');
+            } else {
+                successAlert.textContent = 'Perfil actualizado con éxito.';
+                successAlert.classList.remove('hidden');
+                 if(newFotoUrl) {
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            }
+        } catch (error) {
+            errorAlert.textContent = 'No se pudo conectar con el servidor.';
             errorAlert.classList.remove('hidden');
-        } else {
-            successAlert.textContent = 'Perfil actualizado con éxito.';
-            successAlert.classList.remove('hidden');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Guardar Cambios';
         }
-    } catch (error) {
-        errorAlert.textContent = 'No se pudo conectar con el servidor.';
-        errorAlert.classList.remove('hidden');
-    } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Guardar Cambios';
-    }
+    });
 });
 </script>
 {% endblock %}

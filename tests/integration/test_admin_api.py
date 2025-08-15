@@ -38,8 +38,10 @@ def test_admin_deactivate_user(test_client, session):
 
     login(test_client, "admin@test.com", "password")
 
+    # The correct endpoint is DELETE /api/admin/users/<id>
     resp = test_client.delete(f'/api/admin/users/{chofer.id}')
     assert resp.status_code == 200
+    assert resp.json['msg'] == "Usuario desactivado con éxito."
 
     session.refresh(chofer)
     assert chofer.activo is False
@@ -75,8 +77,10 @@ def test_admin_approve_user(test_client, session):
 
     login(test_client, "admin@test.com", "password")
 
+    # In testing, CSRF is disabled, so no header is needed.
     resp = test_client.post(f'/api/admin/users/{pending_user.id}/approve')
     assert resp.status_code == 200
+    assert resp.json['msg'] == 'Usuario aprobado con éxito.'
 
     session.refresh(pending_user)
     assert pending_user.activo is True

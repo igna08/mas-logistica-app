@@ -247,160 +247,15 @@
 </div>
 
 <script>
-// Función para mostrar alertas
-function showAlert(message, type = 'green', containerId = 'alert-container') {
-    const container = document.getElementById(containerId);
-    if (!container) return;
-    
-    const alertColors = {
-        green: 'bg-green-100 border-green-500 text-green-700',
-        red: 'bg-red-100 border-red-500 text-red-700',
-        yellow: 'bg-yellow-100 border-yellow-500 text-yellow-700',
-        blue: 'bg-blue-100 border-blue-500 text-blue-700'
-    };
-    
-    const alertClass = alertColors[type] || alertColors.green;
-    
-    container.innerHTML = `
-        <div class="border-l-4 p-4 ${alertClass} rounded">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="fas ${type === 'green' ? 'fa-check-circle' : type === 'red' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm">${message}</p>
-                </div>
-                <div class="ml-auto pl-3">
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-current hover:opacity-75">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-        if (container.firstElementChild) {
-            container.firstElementChild.remove();
-        }
-    }, 5000);
-}
+// ... existing script ...
 
-// Función para actualizar una fila de usuario en la tabla
-function updateUserRow(user) {
-    const row = document.getElementById(`user-row-${user.id}`);
-    if (!row) return;
-    
-    // Update user data in the row
-    const nameCell = row.querySelector('.text-sm.font-medium.text-gray-900');
-    if (nameCell) nameCell.textContent = user.nombre || 'Sin nombre';
-    
-    const roleCell = row.querySelector('.inline-flex.px-2.py-1');
-    if (roleCell && user.rol) {
-        roleCell.textContent = user.rol.charAt(0).toUpperCase() + user.rol.slice(1);
-        // Update role color classes
-        roleCell.className = 'inline-flex px-2 py-1 text-xs font-semibold rounded-full ' +
-            (user.rol === 'admin' ? 'bg-purple-100 text-purple-800' :
-             user.rol === 'chofer' ? 'bg-blue-100 text-blue-800' :
-             user.rol === 'mantenimiento' ? 'bg-yellow-100 text-yellow-800' :
-             'bg-gray-100 text-gray-800');
-    }
-}
-
-// Manejar acciones de usuario (aprobar/desactivar)
-document.addEventListener('click', async function(e) {
-    if (e.target.classList.contains('action-btn')) {
-        e.preventDefault();
-        const action = e.target.dataset.action;
-        const userId = e.target.dataset.id;
-        
-        if (!userId) return;
-        
-        let endpoint, method, message;
-        
-        if (action === 'approve') {
-            endpoint = `/api/admin/users/${userId}/approve`;
-            method = 'POST';
-            message = '¿Estás seguro de que quieres aprobar este usuario?';
-        } else if (action === 'deactivate') {
-            endpoint = `/api/admin/users/${userId}`;
-            method = 'DELETE';
-            message = '¿Estás seguro de que quieres desactivar este usuario?';
-        }
-        
-        if (confirm(message)) {
-            try {
-                const response = await fetch(endpoint, { method });
-                const data = await response.json();
-                
-                if (response.ok) {
-                    showAlert(data.msg || 'Operación completada exitosamente', 'green');
-                    // Reload page to reflect changes
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert(data.msg || 'Error en la operación', 'red');
-                }
-            } catch (error) {
-                showAlert('Error de conexión', 'red');
-            }
-        }
-    }
-});
-
-// Manejar formulario de creación de usuario
-document.getElementById('create-user-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = {
-        nombre: document.getElementById('create-nombre').value.trim(),
-        email: document.getElementById('create-email').value.trim(),
-        password: document.getElementById('create-password').value,
-        rol: document.getElementById('create-rol').value
-    };
-    
-    // Validación básica
-    if (!formData.nombre || !formData.email || !formData.password || !formData.rol) {
-        showAlert('Todos los campos son requeridos', 'red', 'create-modal-alert-container');
-        return;
-    }
-    
-    try {
-        const response = await fetch('/api/admin/users/', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(formData)
-        });
-        const data = await response.json();
-        
-        if (!response.ok) {
-            showAlert(data.msg || 'Error al crear usuario', 'red', 'create-modal-alert-container');
-        } else {
-            showAlert('Usuario creado exitosamente', 'green');
-            document.querySelector('[x-data]').__x.$data.createModalOpen = false;
-            document.getElementById('create-user-form').reset();
-            // Reload page to show new user
-            setTimeout(() => window.location.reload(), 1500);
-        }
-    } catch (error) {
-        showAlert('Error de conexión', 'red', 'create-modal-alert-container');
-    }
-});
-
-// Manejar formulario de edición de usuario
 document.getElementById('edit-user-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const userId = document.querySelector('[x-data]').__x.$data.editingUser.id;
     const formData = {
-        nombre: document.getElementById('edit-nombre').value.trim(),
+        nombre: document.getElementById('edit-nombre').value,
         rol: document.getElementById('edit-rol').value
     };
-
-    // Validación básica
-    if (!formData.nombre) {
-        showAlert('El nombre es requerido', 'red', 'edit-modal-alert-container');
-        return;
-    }
 
     try {
         const response = await fetch(`/api/admin/users/${userId}`, {
@@ -409,19 +264,15 @@ document.getElementById('edit-user-form').addEventListener('submit', async funct
             body: JSON.stringify(formData)
         });
         const data = await response.json();
-        
         if (!response.ok) {
-            showAlert(data.msg || 'Error al actualizar', 'red', 'edit-modal-alert-container');
+            showAlert(data.msg || 'Error al actualizar.', 'red', 'edit-modal-alert-container');
         } else {
-            showAlert(data.msg || 'Usuario actualizado con éxito', 'green');
-            // Update the UI with the returned user data
-            if (data.user) {
-                updateUserRow(data.user);
-            }
-            document.querySelector('[x-data]').__x.$data.editModalOpen = false;
+            showAlert('Usuario actualizado con éxito.', 'green');
+            // A simple way is to reload the page to see changes
+            window.location.reload();
         }
     } catch (error) {
-        showAlert('Error de conexión', 'red', 'edit-modal-alert-container');
+        showAlert('Error de conexión.', 'red', 'edit-modal-alert-container');
     }
 });
 </script>
