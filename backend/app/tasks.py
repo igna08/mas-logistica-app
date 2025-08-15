@@ -118,7 +118,10 @@ def generate_and_email_report():
                 return
 
             # 2. Format data for AI prompt
-            report_data = f"Datos de recorridos de la última semana ({one_week_ago.strftime('%Y-%m-%d')} a {datetime.utcnow().strftime('%Y-%m-%d')}):\n"
+            report_data = (
+                f"Datos de recorridos de la última semana "
+                f"({one_week_ago.strftime('%Y-%m-%d')} a {datetime.utcnow().strftime('%Y-%m-%d')}):\n"
+            )
             report_data += f"- Total de recorridos: {len(recorridos)}\n"
             total_km = sum([(r.km_final - r.km_inicial) for r in recorridos if r.km_final and r.km_inicial] or [0])
             report_data += f"- Total KM recorridos: {total_km:.2f}\n"
@@ -144,6 +147,9 @@ def generate_and_email_report():
             )
             ai_summary = response.choices[0].message.content
 
+            # Convert line breaks for HTML
+            ai_summary_html = ai_summary.replace("\n", "<br>")
+
             # 4. Send email
             admin_emails = [user.email for user in Usuario.query.filter_by(rol='admin', activo=True).all()]
             if not admin_emails:
@@ -154,7 +160,7 @@ def generate_and_email_report():
                 subject="Informe Semanal de Flota Vehicular",
                 sender=current_app.config['MAIL_DEFAULT_SENDER'],
                 recipients=admin_emails,
-                html=f"<h1>Informe Semanal</h1><p>{ai_summary.replace('\n', '<br>')}</p>"
+                html=f"<h1>Informe Semanal</h1><p>{ai_summary_html}</p>"
             )
             mail.send(msg)
             print(f"Weekly report sent to {len(admin_emails)} admins.")
